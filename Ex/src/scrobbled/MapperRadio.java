@@ -1,0 +1,53 @@
+package scrobbled;
+
+import java.io.IOException;
+
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
+
+public class MapperRadio extends
+		Mapper<LongWritable, Text, LongWritable, LongWritable> {
+
+	private LongWritable trackIDKey = new LongWritable();
+	private LongWritable numberOfScrobbledValue = new LongWritable();
+
+	@Override
+	public void map(LongWritable key, Text value, Context context)
+			throws IOException, InterruptedException {
+
+		// Convert Text To String
+		String stringvalue = value.toString();
+		String[] splitedvalues = stringvalue.split("\\s+");
+
+		// Check length of Array
+		if (splitedvalues.length == 5) {
+			// Retrieve TrackID in String
+			String trackIDstring = splitedvalues[1].trim();
+			// Retrieve ScrobbledValue in String
+			String skipstring = splitedvalues[2].trim();
+
+			try {
+				// Convert trackIDstring and Scrobbledstring in Long value
+				Long trackIDlong = Long.parseLong(trackIDstring);
+				Long scrobbledlong = Long.parseLong(skipstring);
+
+				// Convert trackIDlong and skiplong in LongWritable
+				trackIDKey.set(trackIDlong);
+				numberOfScrobbledValue.set(scrobbledlong);
+
+				context.write(trackIDKey, numberOfScrobbledValue);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void run(Context context) throws IOException, InterruptedException {
+		setup(context);
+		while (context.nextKeyValue()) {
+			map(context.getCurrentKey(), context.getCurrentValue(), context);
+		}
+		cleanup(context);
+	}
+}
